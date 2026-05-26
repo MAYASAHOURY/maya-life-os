@@ -1,0 +1,99 @@
+# ════════════════════════════════════════════════════════════════════
+# .github/workflows/morning_report.yml
+# Repo: MAYASAHOURY/maya-life-os
+# ════════════════════════════════════════════════════════════════════
+#
+# This workflow lives in maya-life-os.
+# It MONITORS aura-glossy — it does NOT live inside it.
+#
+# TIMEZONE  Jerusalem (Asia/Jerusalem) observes DST:
+#   Summer  IDT = UTC+3   (approx April – October)
+#   Winter  IST = UTC+2   (approx November – March)
+#
+# Each time slot has TWO cron entries (one per DST state).
+# The Python script checks the live Jerusalem clock and exits
+# silently when the wrong-DST entry fires. No duplicate sends.
+#
+# SCHEDULE  (Jerusalem → UTC pairs)
+# ─────────────────────────────────
+#   08:00  Full morning report    05:00 UTC (IDT)  /  06:00 UTC (IST)
+#   09:00  Email check            06:00 UTC (IDT)  /  07:00 UTC (IST)
+#   12:30  Midday nudge           09:30 UTC (IDT)  /  10:30 UTC (IST)
+#   13:00  Study reminder         10:00 UTC (IDT)  /  11:00 UTC (IST)
+#   16:00  Afternoon check        13:00 UTC (IDT)  /  14:00 UTC (IST)
+#   20:00  Apple reminder         17:00 UTC (IDT)  /  18:00 UTC (IST)
+#   21:30  Evening wrap           18:30 UTC (IDT)  /  19:30 UTC (IST)
+#
+# NOTE: 06:00 UTC serves double duty —
+#       08:00 IST (morning, winter) AND 09:00 IDT (email check, summer).
+#       detect_mode() in Python resolves which one runs.
+# ════════════════════════════════════════════════════════════════════
+
+name: Maya Life OS — Daily Reports
+
+on:
+  schedule:
+    # ── 08:00 Jerusalem  FULL MORNING REPORT ─────────────────────
+    - cron: '0 5 * * *'    # 08:00 IDT (UTC+3, summer)
+    - cron: '0 6 * * *'    # 08:00 IST (UTC+2, winter) + 09:00 IDT email check
+
+    # ── 09:00 Jerusalem  Email check ─────────────────────────────
+    - cron: '0 7 * * *'    # 09:00 IST (UTC+2, winter)
+
+    # ── 12:30 Jerusalem  Midday nudge ────────────────────────────
+    - cron: '30 9 * * *'   # 12:30 IDT
+    - cron: '30 10 * * *'  # 12:30 IST
+
+    # ── 13:00 Jerusalem  Study reminder ──────────────────────────
+    - cron: '0 10 * * *'   # 13:00 IDT
+    - cron: '0 11 * * *'   # 13:00 IST
+
+    # ── 16:00 Jerusalem  Afternoon check ─────────────────────────
+    - cron: '0 13 * * *'   # 16:00 IDT
+    - cron: '0 14 * * *'   # 16:00 IST
+
+    # ── 20:00 Jerusalem  Apple reminder ──────────────────────────
+    - cron: '0 17 * * *'   # 20:00 IDT
+    - cron: '0 18 * * *'   # 20:00 IST
+
+    # ── 21:30 Jerusalem  Evening wrap ────────────────────────────
+    - cron: '30 18 * * *'  # 21:30 IDT
+    - cron: '30 19 * * *'  # 21:30 IST
+
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Override mode: morning / email_check / midday / study_reminder / afternoon / apple / evening'
+        required: false
+        default: 'morning'
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run report
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+          GMAIL_ADDRESS:      ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          MOODLE_USERNAME:    ${{ secrets.MOODLE_USERNAME }}
+          MOODLE_PASSWORD:    ${{ secrets.MOODLE_PASSWORD }}
+          NETLIFY_TOKEN:      ${{ secrets.NETLIFY_TOKEN }}
+          GITHUB_TOKEN:       ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_EVENT_NAME:  ${{ github.event_name }}
+          REPORT_MODE:        ${{ github.event.inputs.mode || 'morning' }}
+        run: python morning_report.py
