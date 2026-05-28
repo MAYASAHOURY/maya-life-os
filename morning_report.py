@@ -95,6 +95,28 @@ DEFAULT_STUDY = [
 ]
 STUDY_FOCUS = "Deep Learning Project 1  (due 30/05)"
 STUDY_HOURS = 2.0
+# ── Weekly university timetable (Kinneret College) ────────────────
+WEEKLY_SCHEDULE = {
+    0: [  # Monday
+        {"time": "08:00", "course": "Algorithms",            "type": "שיעור"},
+        {"time": "10:00", "course": "Algorithms",            "type": "תרגול"},
+        {"time": "12:00", "course": "Engineering Economics", "type": "שיעור"},
+        {"time": "16:30", "course": "Deep Learning",         "type": "שיעור"},
+    ],
+    1: [  # Tuesday
+        {"time": "10:00", "course": "Engineering Economics", "type": "תרגול"},
+        {"time": "13:00", "course": "HCI (Human-Computer Interaction)", "type": "שיעור"},
+    ],
+    2: [  # Wednesday
+        {"time": "16:00", "course": "IoT",                   "type": "שיעור"},
+    ],
+    3: [  # Thursday
+        {"time": "10:00", "course": "SIS Engineering",       "type": "שיעור"},
+    ],
+    4: [],  # Friday   — free
+    5: [],  # Saturday — free
+    6: [],  # Sunday   — free
+}
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -387,6 +409,16 @@ def _p1_header(now: datetime) -> str:
         f"{DIV}"
     )
 
+def _p1_today_classes(now: datetime) -> str:
+    classes = WEEKLY_SCHEDULE.get(now.weekday(), [])
+    if not classes:
+        return ""
+    rows = []
+    for c in classes:
+        rows.append(f"🕐 <b>{c['time']}</b>   {c['course']}  <i>({c['type']})</i>")
+    return _sec(f"🎓 TODAY'S CLASSES  ·  {now.strftime('%A')}", "\n".join(rows))
+
+_p1_today_classes(now),
 
 def _p1_quick_summary(unread: int, high_count: int, deadline_count: int, now: datetime) -> str:
     mins  = _mins_until(13, 0, now)
