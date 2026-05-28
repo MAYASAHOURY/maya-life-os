@@ -95,7 +95,9 @@ DEFAULT_STUDY = [
 ]
 STUDY_FOCUS = "Deep Learning Project 1  (due 30/05)"
 STUDY_HOURS = 2.0
+
 # ── Weekly university timetable (Kinneret College) ────────────────
+# Keys: 0=Monday … 6=Sunday  (Python weekday())
 WEEKLY_SCHEDULE = {
     0: [  # Monday
         {"time": "08:00", "course": "Algorithms",            "type": "שיעור"},
@@ -409,16 +411,20 @@ def _p1_header(now: datetime) -> str:
         f"{DIV}"
     )
 
+
 def _p1_today_classes(now: datetime) -> str:
+    """Show today's university classes — only on days that have them."""
     classes = WEEKLY_SCHEDULE.get(now.weekday(), [])
     if not classes:
-        return ""
+        return ""   # free day — skip section entirely
+
     rows = []
     for c in classes:
         rows.append(f"🕐 <b>{c['time']}</b>   {c['course']}  <i>({c['type']})</i>")
-    return _sec(f"🎓 TODAY'S CLASSES  ·  {now.strftime('%A')}", "\n".join(rows))
 
-_p1_today_classes(now),
+    day_name = now.strftime("%A")
+    return _sec(f"🎓 TODAY'S CLASSES  ·  {day_name}", "\n".join(rows))
+
 
 def _p1_quick_summary(unread: int, high_count: int, deadline_count: int, now: datetime) -> str:
     mins  = _mins_until(13, 0, now)
@@ -545,6 +551,7 @@ def build_morning_report(now: datetime) -> str:
 
     sections = [
         _p1_header(now),
+        _p1_today_classes(now),
         _p1_quick_summary(unread, len(high), len(deadlines), now),
         _p1_email_check(emails, unread),
         _p1_priorities(deadlines),
